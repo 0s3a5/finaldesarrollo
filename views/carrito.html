@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Principal</title>
+    <link href="/style.css" rel="stylesheet" type="text/css">
+    <link href="/fondo.css" rel="stylesheet" type="text/css">
+    <link href="/agregaralcarrito.css" rel="stylesheet" type="text/css">
+    <link href="/botonshoping.css" rel="stylesheet" type="text/css">
+    <link href="/card.css" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script>
+        let dineroUsuario = 0;
+        let totalin = 0;
+        const limites = {
+            "Producto1": 5,
+            "Producto2": 3,
+        };
+
+        async function cargarCarrito() {
+            try {
+                const response = await fetch('/carrito');
+                if (!response.ok) {
+                    throw new Error('Error al cargar el carrito');
+                }
+                const data = await response.json();
+                dineroUsuario = data.dineroUsuario;
+                totalin = data.totalin;
+
+                mostrarCarrito(data.carrito);
+                mostrarTotal();
+            } catch (error) {
+                console.error(error);
+                alert('No se pudo cargar el carrito.');
+            }
+        }
+
+        function mostrarCarrito(carrito) {
+            const container = document.body;
+            carrito.forEach(producto => {
+                const productoDiv = document.createElement('div');
+                productoDiv.classList.add('container');
+                productoDiv.style.cssText = `
+                    width: 100%; max-width: 800px; text-align: center; padding: 1rem; 
+                    background-color: black; border-radius: 10px; min-height: 300px;
+                `;
+
+                productoDiv.innerHTML = `
+                    <div class="container" style="
+                        width: 100%; max-width: 800px; padding: 1rem; background-color: white;
+                        display: flex; align-items: center; border-radius: 10px;">
+                        <img src="${producto.imagen_producto}" alt="Producto: ${producto.nombre_producto}" 
+                            style="min-width: 80px; max-width: 27%; margin-right: clamp(10px, 10vw, 200px); border: 2px solid black; border-radius: 5px;">
+                        <div style="text-align: left;">
+                            <p style="font-size: 24px; font-weight: bold;">Producto: <span>${producto.nombre_producto}</span></p>
+                            <p style="font-size: 24px; font-weight: bold;">Cantidad: <span>${producto.cantidad_producto}</span></p>
+                            <p style="font-size: 24px; font-weight: bold;">Precio: <span>${producto.precio_producto}</span> USD</p>
+                            <p style="font-size: 24px; font-weight: bold;">Total: <span>${producto.total}</span> USD</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="eliminarProducto(${producto.id})" style="margin-right: 10px;">Borrar</button>
+                    </div>
+                `;
+                container.appendChild(productoDiv);
+            });
+        }
+
+        function mostrarTotal() {
+            const totalContainer = document.createElement('div');
+            totalContainer.classList.add('container');
+            totalContainer.style.cssText = `
+                width: 100%; max-width: 300px; text-align: center; padding: 1rem;
+                background-color: black; border-radius: 10px; min-height: 300px;
+            `;
+
+            if (totalin > 0) {
+                totalContainer.innerHTML = `
+                    <div class="cards__inner">
+                        <div class="cards__card card">
+                            <p class="card__price" style="text-align: center;">Total a pagar</p>
+                            <p class="card__price" style="text-align: center;">$${totalin} USD</p>
+                            <button class="btn" onclick="transferir_a_boleta()">Pagar</button>
+                            <p id="mensaje-error" style="color: red; display: none;"></p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                totalContainer.innerHTML = `
+                    <p class="card__price" style="text-align: center; color: white;">No hay ningún producto aún</p>
+                `;
+            }
+            document.body.appendChild(totalContainer);
+        }
+
+        async function eliminarProducto(id) {
+            try {
+                const response = await fetch('/eliminarcaja', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (response.ok) {
+                    alert('Producto eliminado del carrito.');
+                    location.reload();
+                } else {
+                    alert('Error al eliminar el producto.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al eliminar el producto.');
+            }
+        }
+
+        async function transferir_a_boleta() {
+            try {
+                const response = await fetch('/transferir-a-boleta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ totalin })
+                });
+                if (response.ok) {
+                    window.location.href = '/direccionador';
+                } else {
+                    alert('Error al procesar el pago.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al procesar el pago.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarCarrito);
+    </script>
+</head>
+
+<body class="wallpaper">
+    <div style="height: 10vh;"></div>
+    <div id="carrito"></div>
+</body>
+
+</html>

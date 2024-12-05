@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalles del Producto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .product-container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 5px;
+    }
+    .product-title {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .product-price {
+      color: #e91e63;
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    .product-description {
+      margin-bottom: 20px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #007BFF;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="product-container" id="producto">
+    <!-- El contenido se llenará dinámicamente -->
+  </div>
+  <form id="carritoForm">
+    <label for="cantidad_producto">Cantidad:</label>
+    <input type="number" id="cantidad_producto" name="cantidad_producto" min="1" value="1">
+    <button type="button" class="button" id="addToCartButton">Añadir al carrito</button>
+  </form>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('paginaid'); // Obtener el ID del producto desde la URL
+
+    async function cargarProducto() {
+      try {
+        const response = await fetch(`/api/producto?paginaid=${id}`);
+        const producto = await response.json();
+
+        if (response.ok) {
+          // Actualizar el contenido del DOM con los datos del producto
+          const productoDiv = document.getElementById('producto');
+          productoDiv.innerHTML = `
+            <h1 class="product-title">${producto.nombre}</h1>
+            <img src="${producto.link_imagen}" alt="${producto.nombre}">
+            <p class="product-price">Precio: $${producto.precio}</p>
+            <p class="product-description">${producto.descripcion}</p>
+            <p>Cantidad disponible: ${producto.cantidad}</p>
+          `;
+
+          // Guardar el ID del producto en el atributo "data" del formulario
+          document.getElementById('carritoForm').dataset.idProducto = producto.id_producto;
+        } else {
+          alert(producto.error || "Error al cargar el producto.");
+        }
+      } catch (error) {
+        console.error("Error al cargar el producto:", error);
+        alert("Ocurrió un error al cargar el producto. Intenta nuevamente.");
+      }
+    }
+
+    async function añadirAlCarrito() {
+      const form = document.getElementById('carritoForm');
+      const idProducto = form.dataset.idProducto;
+      const cantidad = document.getElementById('cantidad_producto').value;
+
+      if (!idProducto) {
+        alert("No se pudo identificar el producto. Por favor, recarga la página.");
+        return;
+      }
+
+      if (cantidad <= 0) {
+        alert("Por favor, selecciona una cantidad válida.");
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/carrito', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id_producto: idProducto,
+            cantidad: cantidad
+          })
+        });
+
+        if (response.ok) {
+          alert("Producto añadido al carrito con éxito.");
+        } else {
+          const errorData = await response.json();
+          alert(`Error al añadir al carrito: ${errorData.error || "Error desconocido"}`);
+        }
+      } catch (error) {
+        console.error("Error al añadir al carrito:", error);
+        alert("Hubo un problema al añadir el producto al carrito. Inténtalo de nuevo.");
+      }
+    }
+
+    document.getElementById('addToCartButton').addEventListener('click', añadirAlCarrito);
+
+    cargarProducto();
+  </script>
+</body>
+</html>
